@@ -88,23 +88,23 @@ async def update_user_details(user_id, user_data: User):
 # }
 
 @router.post("/wallet/{user_id}/withdraw", response_model=dict , status_code=201)
-async def withdraw_money(user_id, transaction_data: dict):
+async def withdraw_money_endpoint(user_id: str, transaction_data: dict):
     amount = transaction_data.get("amount")
     description = transaction_data.get("description")
     result = await withdraw_money(user_id, amount, description)
-    if result:
-        return result
-    raise HTTPException(status_code=400, detail="Withdrawal failed")
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 
 @router.post("/wallet/{user_id}/add-money", response_model=dict , status_code=201)
-async def add_money(user_id, transaction_data: dict):
+async def add_money_endpoint(user_id: str, transaction_data: dict):
     amount = transaction_data.get("amount")
     description = transaction_data.get("description")
     result = await add_money(user_id, amount, description)
-    if result:
-        return result
-    raise HTTPException(status_code=400, detail="Deposit failed")
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    return result
 
 @router.get("/wallet/{user_id}/balance", response_model=dict , status_code=200)
 async def get_balance(user_id):

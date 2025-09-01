@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Wallet Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        .transaction {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Digital Wallet Dashboard</h1>
+
+    <div class="section">
+        <h2>Users</h2>
+        <div class="form-group">
+            <input type="text" id="username" placeholder="Username">
+            <input type="email" id="email" placeholder="Email">
+            <input type="text" id="phone" placeholder="Phone">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="createUser()">Create User</button>
+        </div>
+        <div id="usersList"></div>
+    </div>
+
+    <div class="section">
+        <h2>Wallet Operations</h2>
+        <div class="form-group">
+            <select id="walletUserId"></select>
+            <input type="number" id="amount" placeholder="Amount" step="0.01">
+            <input type="text" id="description" placeholder="Description">
+            <button onclick="addMoney()">Add Money</button>
+            <button onclick="withdrawMoney()">Withdraw Money</button>
+        </div>
+        <div id="walletBalance"></div>
+    </div>
+
+    <div class="section">
+        <h2>Transfer Money</h2>
+        <div class="form-group">
+            <select id="senderId"></select>
+            <select id="recipientId"></select>
+            <input type="number" id="transferAmount" placeholder="Amount" step="0.01">
+            <input type="text" id="transferDescription" placeholder="Description">
+            <button onclick="transferMoney()">Transfer</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Transaction History</h2>
+        <div class="form-group">
+            <select id="transactionUserId"></select>
+            <button onclick="getTransactions()">View Transactions</button>
+        </div>
+        <div id="transactionsList"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let users = [];
+
+        async function loadUsers() {
+            const response = await fetch(`${API_URL}/users`);
+            users = await response.json();
+            updateUserSelects();
+            displayUsers();
+        }
+
+        function updateUserSelects() {
+            const selects = ['walletUserId', 'senderId', 'recipientId', 'transactionUserId'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = users.map(user => 
+                    `<option value="${user.user_id}">${user.username} (${user.email})</option>`
+                ).join('');
+            });
+        }
+
+        function displayUsers() {
+            const usersList = document.getElementById('usersList');
+            usersList.innerHTML = `
+                <table>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Balance</th>
+                    </tr>
+                    ${users.map(user => `
+                        <tr>
+                            <td>${user.username}</td>
+                            <td>${user.email}</td>
+                            <td>${user.phone_number || '-'}</td>
+                            <td>$${user.balance.toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+        }
+
+        async function createUser() {
+            const userData = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value,
+                phone_number: document.getElementById('phone').value,
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/users`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(userData)
+                });
+                if (response.ok) {
+                    loadUsers();
+                    alert('User created successfully!');
+                } else {
+                    alert('Failed to create user');
+                }
+            } catch (error) {
+                alert('Error creating user: ' + error.message);
+            }
+        }
+
+        async function addMoney() {
+            const userId = document.getElementById('walletUserId').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const description = document.getElementById('description').value;
+
+            try {
+                const response = await fetch(`${API_URL}/wallet/${userId}/add-money`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ amount, description })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    loadUsers();
+                    alert('Money added successfully! New balance: $' + data.new_balance);
+                } else {
+                    alert(data.detail || 'Failed to add money');
+                }
+            } catch (error) {
+                alert('Error adding money: ' + error.message);
+            }
+        }
+
+        async function withdrawMoney() {
+            const userId = document.getElementById('walletUserId').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const description = document.getElementById('description').value;
+
+            try {
+                const response = await fetch(`${API_URL}/wallet/${userId}/withdraw`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ amount, description })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    loadUsers();
+                    alert('Withdrawal successful! New balance: $' + data.new_balance);
+                } else {
+                    alert(data.detail || 'Failed to withdraw money');
+                }
+            } catch (error) {
+                alert('Error withdrawing money: ' + error.message);
+            }
+        }
+
+        async function transferMoney() {
+            const transferData = {
+                sender_user_id: document.getElementById('senderId').value,
+                recipient_user_id: document.getElementById('recipientId').value,
+                amount: parseFloat(document.getElementById('transferAmount').value),
+                description: document.getElementById('transferDescription').value
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/transfer`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(transferData)
+                });
+                if (response.ok) {
+                    loadUsers();
+                    alert('Transfer successful!');
+                } else {
+                    alert('Failed to transfer money');
+                }
+            } catch (error) {
+                alert('Error transferring money: ' + error.message);
+            }
+        }
+
+        async function getTransactions() {
+            const userId = document.getElementById('transactionUserId').value;
+            try {
+                const response = await fetch(`${API_URL}/transactions/${userId}?page=1&limit=10`);
+                const data = await response.json();
+                
+                const transactionsList = document.getElementById('transactionsList');
+                transactionsList.innerHTML = `
+                    <table>
+                        <tr>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                            <th>Date</th>
+                        </tr>
+                        ${data.transactions.map(tx => `
+                            <tr>
+                                <td>${tx.transaction_type}</td>
+                                <td>$${tx.amount.toFixed(2)}</td>
+                                <td>${tx.description || '-'}</td>
+                                <td>${new Date(tx.created_at).toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                `;
+            } catch (error) {
+                alert('Error fetching transactions: ' + error.message);
+            }
+        }
+
+        // Load users when page loads
+        loadUsers();
+    </script>
+</body>
+</html>

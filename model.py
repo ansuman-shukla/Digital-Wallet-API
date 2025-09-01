@@ -6,10 +6,10 @@ from datetime import datetime
 
 
 class TransactionType(str, Enum):
-    CREDIT = "credit"
-    DEBIT = "debit"
-    TRANSFER_IN = "transfer_in"
-    TRANSFER_OUT = "transfer_out"
+    CREDIT = "CREDIT"
+    DEBIT = "DEBIT"
+    TRANSFER_IN = "TRANSFER_IN"
+    TRANSFER_OUT = "TRANSFER_OUT"
 
 
 
