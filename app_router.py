@@ -33,6 +33,11 @@ async def create_new_user(user_data: User):
         return user
     raise HTTPException(status_code=400, detail="User creation failed")
 
+@router.get("/users" , status_code=200)
+async def list_all_users_detail():
+    users = await get_all_users()
+    return users
+
 @router.get("/users/{user_id}", response_model=dict , status_code=200)
 async def get_user_details(user_id):
     user = await get_user(user_id)
@@ -155,7 +160,7 @@ async def get_balance(user_id):
 
 
 @router.post("/transactions", response_model=dict , status_code=201)
-async def create_transaction(transaction_data: dict):
+async def create_transaction(transaction_data: Transaction):
     result = await create_transaction(transaction_data)
     if result:
         return result

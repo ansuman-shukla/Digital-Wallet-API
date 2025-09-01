@@ -2,18 +2,55 @@ from bson import ObjectId
 from datetime import datetime
 from typing import List, Optional
 from core import db , users_collection, transactions_collection
+from model import User
+from schema import *
 
 
 
-async def create_user(user_data: dict):
-    # Logic to create a new user
+async def create_user(user: User):
+    user_data = user.model_dump()
+    user_data["balance"] = 0.00
+    user_data["created_at"] = datetime.now()
+    user_data["updated_at"] = datetime.now()
+    
     result = await users_collection.insert_one(user_data)
-    return {"user_id": str(result.inserted_id), **user_data}
+    return {
+        "user_id": str(result.inserted_id),
+        "username": user_data.get("username"),
+        "email": user_data.get("email"),
+        "phone_number": user_data.get("phone_number"),
+        "balance": user_data.get("balance", 0.00),
+        "created_at": user_data.get("created_at"),
+        "updated_at": user_data.get("updated_at")
+    }
+
+async def get_all_users():
+    users = []
+    cursor = users_collection.find()
+    async for user in cursor:
+        users.append({
+            "user_id": str(user["_id"]),
+            "username": user.get("username"),
+            "email": user.get("email"),
+            "phone_number": user.get("phone_number"),
+            "balance": user.get("balance", 0.00),
+            "created_at": user.get("created_at"),
+            "updated_at": user.get("updated_at")
+        })
+    return users
 
 async def get_user(user_id):
     user = await users_collection.find_one({"_id": ObjectId(user_id)})
     if user:
-        return {"user_id": user["_id"], "name": user["name"]}
+        return {
+            "user_id": str(user["_id"]),
+            "username": user.get("username"),
+            "email": user.get("email"),
+            "phone_number": user.get("phone_number"),
+            "balance": user.get("balance", 0.00),
+            "created_at": user.get("created_at"),
+            "updated_at": user.get("updated_at")
+        }
     return {"error": "User not found"}
 
 async def update_user(user_id, user_data: dict):
@@ -29,10 +66,13 @@ async def withdraw_money(user_id, amount: float, description: Optional[str] = No
     user = await users_collection.find_one({"_id": ObjectId(user_id)})
     if user:
         if user["balance"] >= amount:
-            user["balance"] -= amount
-            await users_collection.update_one({"_id": ObjectId(user_id)}, {"$set": {"balance": user["balance"]}})
+            new_balance = user["balance"] - amount
+            await users_collection.update_one(
+                {"_id": ObjectId(user_id)}, 
+                {"$set": {"balance": new_balance}}
+            )
             transaction = {
-                "user_id": user_id,
+                "user_id": str(user_id),
                 "amount": -amount,
                 "description": description,
                 "timestamp": datetime.now()

@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from abc import ABC, abstractmethod
 from enum import Enum
+from bson import ObjectId
+from datetime import datetime
 
 
 class TransactionType(str, Enum):
@@ -10,21 +12,23 @@ class TransactionType(str, Enum):
     TRANSFER_OUT = "transfer_out"
 
 
+
 class User(BaseModel):
-    user_id: int
     username: str
     email: str
-    phone_number: str
-    balance: float
+    password: str
+    phone_number: str | None = None
+    balance: float = 0.00
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 class Transaction(BaseModel):
-    transaction_id: int
-    user_id: int
+    user_id: str
     transaction_type: TransactionType
     amount: float
     description: str
-    
+    timestamp: datetime
 
 # [
 #   {

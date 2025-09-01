@@ -22,9 +22,13 @@
 #   "created_at": Date
 # }
 
-def user_schema(item):
+
+from bson import ObjectId
+
+
+def user(item):
     return {
-        "_id": item.get("_id"),
+        "_id": ObjectId(item.get("_id")),
         "username": item.get("username"),
         "email": item.get("email"),
         "password": item.get("password"),
@@ -34,20 +38,35 @@ def user_schema(item):
         "updated_at": item.get("updated_at")
     }
 
-def transaction_schema(item):
+async def transaction(item):
     return {
-        "_id": item.get("_id"),
-        "user_id": item.get("user_id"),
+    "_id": ObjectId(item.get("_id")),
+    "user_id": ObjectId(item.get("user_id")),
+    "transaction_type": item.get("transaction_type"),
+    "amount": item.get("amount", 0.00),
+    "description": item.get("description"),
+    "reference_transaction_id": ObjectId(item.get("reference_transaction_id")),
+    "recipient_user_id": ObjectId(item.get("recipient_user_id")),
+    "created_at": item.get("created_at")
+}
+
+async def transfer(item):
+    return {
+        "_id": ObjectId(item.get("_id")),
+        "user_id": ObjectId(item.get("user_id")),
         "transaction_type": item.get("transaction_type"),
         "amount": item.get("amount", 0.00),
         "description": item.get("description"),
-        "reference_transaction_id": item.get("reference_transaction_id"),
-        "recipient_user_id": item.get("recipient_user_id"),
+        "reference_transaction_id": ObjectId(item.get("reference_transaction_id")),
+        "recipient_user_id": ObjectId(item.get("recipient_user_id")),
         "created_at": item.get("created_at")
     }
 
-def return_users_list(items):
-    return [user_schema(item) for item in items]
+async def return_user_list(items):
+    return [await user(item) for item in items]
 
-def return_transactions_list(items):
-    return [transaction_schema(item) for item in items]
+async def return_transaction_list(items):
+    return [await transaction(item) for item in items]
+
+async def return_transfer_list(items):
+    return [await transfer(item) for item in items]
